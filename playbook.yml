@@ -1,0 +1,21 @@
+---
+- name: Playbook to deploy MQ Solution
+  vars:
+    terraform_template_vars: "{{ playbook_dir }}/group_vars/terraform.template.tfvars"
+    credentials_template_vars: "{{ playbook_dir }}/group_vars/credentials.auto.template.tfvars"
+    shared_outputs_vars: "{{ playbook_dir }}/group_vars/shared_outputs.json"
+    shared_outputs_template: "{{ playbook_dir }}/shared_outputs_template.j2" 
+  hosts: localhost
+  pre_tasks:
+    - name: Create shared outputs file if doesn't exist
+      copy:
+        dest: "{{ shared_outputs_vars }}"
+        force: false
+        content: {}
+      check_mode: no
+  roles:
+    - role: 105-ibm-vpc-openshift
+    - role: 200-openshift-gitops
+    - role: 210-ibm-odf-storage
+    - role: 220-dev-tools
+    - role: 230-integration-mq

@@ -1,0 +1,142 @@
+apiVersion: cloud.ibm.com/v1alpha1
+kind: BillOfMaterial
+metadata:
+  name: 230-integration-mq
+  labels:
+    type: software
+    code: '230'
+  annotations:
+    displayName: Integration - MQ
+    description: GitOps deployment of MQ for Cloud pak for Integration
+    deployment-type/gitops: 'true'
+    dependencies.cloudnativetoolkit.dev/needs: gitops,cluster,storage
+    dependencies.cloudnativetoolkit.dev/needs_gitops: gitops_repo
+    dependencies.cloudnativetoolkit.dev/needs_cluster: cluster
+    dependencies.cloudnativetoolkit.dev/needs_storage: util-storage-class-manager
+spec:
+  version: v1.0.0
+  modules:
+    - name: cp4i-dependency-management
+      alias: cp4i-version-dependency
+      version: v1.2.7
+      variables:
+        - name: cp4i_version
+          value: '2022_2_1'
+    - name: gitops-cp-catalogs
+      alias: gitops-cp-catalogs
+      version: v1.2.7
+      variables:
+        - name: entitlement_key
+          scope: global
+    - name: gitops-cp-mq
+      alias: gitops-cp-mq
+      version: v1.1.7
+    - name: gitops-cp-queue-manager
+      alias: gitops-cp-queue-manager
+      version: v1.1.0
+      dependencies:
+        - name: namespace
+          ref: cp4i-mq
+      variables:
+        - name: qmgr_name
+          value: QM1
+        - name: qmgr_instance_name
+          value: mq-instance
+        - name: config_map
+          value: oms-queue-config
+        - name: storageClass
+          alias: rwo_storage_class
+          scope: global
+    - name: gitops-namespace
+      alias: cp4i-mq
+      version: v1.15.0
+      variables:
+        - name: name
+          value: cp4i-mq
+    - name: gitops-repo
+      alias: gitops_repo
+      version: v1.23.3
+    - name: namespace
+      alias: gitea_namespace
+      version: v3.2.4
+      variables:
+        - name: name
+          value: gitea
+    - name: ocp-login
+      alias: cluster
+      version: v1.6.2
+    - name: olm
+      alias: olm
+      version: v1.3.5
+    - name: gitea
+      alias: gitea
+      version: v0.5.1
+      dependencies:
+        - id: namespace
+          ref: gitea_namespace
+    - name: sealed-secret-cert
+      alias: sealed-secret-cert
+      version: v1.0.1
+    - name: util-clis
+      version: v1.18.2
+    - name: util-storage-class-manager
+      version: v1.0.3
+  variables:
+    - name: gitops_repo_host
+      type: string
+      description: The host for the git repository.
+      value: ''
+    - name: gitops_repo_type
+      type: string
+      description: The type of the hosted git repository (github or gitlab).
+      value: ''
+    - name: gitops_repo_org
+      type: string
+      description: The org/group where the git repository exists/will be provisioned.
+      value: ''
+    - name: gitops_repo_project
+      type: string
+      description: >-
+        The project that will be used for the git repo. (Primarily used for
+        Azure DevOps repos)
+      value: ''
+    - name: gitops_repo_username
+      type: string
+      description: The username of the user with access to the repository
+      value: ''
+    - name: gitops_repo_token
+      type: string
+      description: The personal access token used to access the repository
+      value: ''
+      sensitive: true
+    - name: gitops_repo_repo
+      type: string
+      description: >-
+        The short name of the repository (i.e. the part after the org/group
+        name)
+    - name: server_url
+      type: string
+      description: The url for the OpenShift api
+    - name: cluster_login_token
+      type: string
+      description: Token used for authentication
+      sensitive: true
+    - name: util-storage-class-manager_rwx_storage_class
+      type: string
+      description: The storage class to use for Read-Write-Many volumes
+    - name: util-storage-class-manager_rwo_storage_class
+      type: string
+      description: ReadWriteOnce access type Storage Class
+    - name: util-storage-class-manager_file_storage_class
+      type: string
+      description: The storage class to use for File storage volumes
+    - name: util-storage-class-manager_block_storage_class
+      type: string
+      description: The storage class to use for Block storage volumes
+  outputs:
+    - name: entitlement_key
+      sensitive: true
+    - name: gitops_repo_token
+      sensitive: true
+    - name: cluster_login_token
+      sensitive: true

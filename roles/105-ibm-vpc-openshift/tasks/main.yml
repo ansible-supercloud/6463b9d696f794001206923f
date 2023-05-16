@@ -1,0 +1,42 @@
+---
+- name: Apply terraform
+  terraform:
+    force_init: true
+    project_path: "{{ role_path }}/files"
+    variables_files:
+    - "{{ terraform_template_vars }}"
+    - "{{ credentials_template_vars }}"
+    - "{{ shared_outputs_vars }}"
+  register: terraform_result
+- name: Set tmp file path
+  set_fact:
+    tmp_file: "{{ role_path }}/tmp.json"
+- name: Create tmp file if doesn't exist
+  file:
+    path: "{{ tmp_file }}"
+    state: touch
+  check_mode: no
+- name: Write outputs to tmp file
+  template:
+    src: "{{ shared_outputs_template }}"
+    dest: "{{ tmp_file }}"
+    lstrip_blocks: true
+  check_mode: no
+- name: Set files content to variables
+  set_fact:
+    shared_outputs_content: "{{ lookup('file', shared_outputs_vars) }}"
+    tmp_outputs_content: "{{ lookup('file', tmp_file) }}"
+- name: Read file directly into fact
+  set_fact:
+    merged_outputs: "{{ shared_outputs_content | combine(tmp_outputs_content, recursive=True) }}"
+- name: Write over shared outputs file
+  copy:
+    dest: "{{ shared_outputs_vars }}"
+    force: true
+    content: "{{ merged_outputs | to_nice_json }}"
+  check_mode: no
+- name: Delete tmp file
+  file:
+    path: "{{ tmp_file }}"
+    state: absent
+  check_mode: no
